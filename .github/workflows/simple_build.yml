@@ -1,0 +1,42 @@
+name: Simple Signed Build
+
+on:
+  workflow_dispatch:   # 只保留手动触发，没有任何条件限制
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Create signing.properties and key.jks
+        run: |
+          echo "storePassword=${{ secrets.KEY_STORE_PASSWORD }}" > signing.properties
+          echo "keyAlias=${{ secrets.ALIAS }}" >> signing.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> signing.properties
+          echo "storeFile=../key.jks" >> signing.properties
+          echo "${{ secrets.SIGNING_KEY }}" | base64 --decode > key.jks
+          # 如果项目需要 gpr 认证也加上（如果不需可删）
+          echo "gpr.user=${{ secrets.GPR_USER }}" >> signing.properties
+          echo "gpr.key=${{ secrets.GPR_KEY }}" >> signing.properties
+
+      - name: Build Release APK
+        run: ./gradlew assembleRelease
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: HyperCeiler-release
+          path: app/build/outputs/apk/release/*.apk
