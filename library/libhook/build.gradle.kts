@@ -1,61 +1,3 @@
-plugins {
-    alias(libs.plugins.android.library)
-    alias(libs.plugins.lsparanoid)
-}
-
-lsparanoid {
-    seed = 227263
-    classFilter = { true }
-    includeDependencies = true
-    variantFilter = { variant ->
-        variant.buildType != "debug"
-    }
-}
-
-android {
-    namespace = "com.sevtinge.hyperceiler.libhook"
-    compileSdk = 36
-
-    defaultConfig {
-        minSdk = 35
-
-        buildConfigField("String", "APP_MODULE_ID", "\"com.sevtinge.hyperceiler\"")
-    }
-
-    buildFeatures {
-        aidl = true
-        buildConfig = true
-    }
-
-    buildTypes {
-        release {
-            consumerProguardFiles("proguard-rules.pro")
-        }
-        create("beta") {
-            consumerProguardFiles("proguard-rules.pro")
-        }
-        create("canary") {
-            consumerProguardFiles("proguard-rules.pro")
-        }
-    }
-}
-
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
-    }
-}
-
-kotlin {
-    jvmToolchain {
-        languageVersion = JavaLanguageVersion.of(21)
-    }
-
-    compilerOptions {
-        freeCompilerArgs.add("-XXLanguage:+MultiDollarInterpolation")
-    }
-}
-
 dependencies {
     api(libs.core)
     api(libs.fragment)
@@ -85,4 +27,7 @@ dependencies {
     api(projects.library.processor)
     api(projects.library.common)
     annotationProcessor(projects.library.processor)
+
+    // 显式添加 Xposed API 以解决编译错误
+    compileOnly 'de.robv.android.xposed:api:82'
 }
