@@ -32,25 +32,24 @@ import android.view.accessibility.AccessibilityManager;
 
 import com.sevtinge.hyperceiler.common.log.XposedLog;
 import com.sevtinge.hyperceiler.libhook.base.BaseHook;
-import com.sevtinge.hyperceiler.libhook.callback.IMethodHook;
 
 import java.util.List;
 
-import io.github.kyuubiran.ezxhelper.xposed.common.HookParam;
+import de.robv.android.xposed.XC_MethodHook;
+import de.robv.android.xposed.XposedHelpers;
 
 public class QuickManagerAccessibilityPermission extends BaseHook {
     @Override
     public void init() {
-        findAndHookMethod("com.android.settings.SettingsActivity", "onCreate", Bundle.class, new IMethodHook() {
+        findAndHookMethod("com.android.settings.SettingsActivity", "onCreate", Bundle.class, new XC_MethodHook() {
             @Override
-            public void after(HookParam param) throws PackageManager.NameNotFoundException {
-                Activity activity = (Activity) param.getThisObject();
+            protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                Activity activity = (Activity) param.thisObject;
                 Intent intent = activity.getIntent();
                 String action = intent.getAction();
                 if (action != null && action.equals("android.settings.ACCESSIBILITY_SETTINGS")) {
                     // 获取打开此 Activity 的应用包名
-                    String packageName = (String) getObjectField(intent, "mSenderPackageName");
-                    // XposedBridge.log("启动包名：" + packageName);
+                    String packageName = (String) XposedHelpers.getObjectField(intent, "mSenderPackageName");
                     if (packageName == null) {
                         return;
                     }
@@ -59,7 +58,8 @@ public class QuickManagerAccessibilityPermission extends BaseHook {
                     String summary = null;
 
                     PackageManager packageManager = activity.getPackageManager();
-                    AccessibilityManager accessibilityManager = (AccessibilityManager) callStaticMethod(AccessibilityManager.class, "getInstance", new Class[]{Context.class}, activity);
+                    AccessibilityManager accessibilityManager = (AccessibilityManager) XposedHelpers.callStaticMethod(
+                            AccessibilityManager.class, "getInstance", new Class[]{Context.class}, activity);
                     // 遍历无障碍服务列表，直到与之相同地包名
                     List<AccessibilityServiceInfo> installedAccessibilityServiceList = accessibilityManager.getInstalledAccessibilityServiceList();
                     for (AccessibilityServiceInfo accessibilityServiceInfo : installedAccessibilityServiceList) {
@@ -80,7 +80,6 @@ public class QuickManagerAccessibilityPermission extends BaseHook {
                     }
 
                     XposedLog.i(TAG, getPackageName(), "Accessibility services is " + accessibilityService);
-
 
                     Intent intentOpenSub = new Intent(activity, loadClassOrNull("com.android.settings.SubSettings", getClassLoader()));
                     intentOpenSub.setAction("android.intent.action.MAIN");
